@@ -1,124 +1,70 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
-import 'tcp_client.dart';
-import 'tcp_server.dart';
-import 'udp_client.dart';
-import 'udp_server.dart';
-import 'discovery_service.dart';
 
-class ChatScreen extends StatefulWidget {
-  @override
-  _ChatScreenState createState() => _ChatScreenState();
+class TCPServer {
+  ServerSocket? _serverSocket;
+
+  Future<void> startServer(int port, Function(String) onMessageReceived) async {
+    _serverSocket = await ServerSocket.bind(InternetAddress.anyIPv4, port);
+    _serverSocket?.listen((Socket client) {
+      client.listen((List<int> data) {
+        String message = String.fromCharCodes(data);
+        onMessageReceived(message);
+      });
+    });
+  }
+
+  void stopServer() {
+    _serverSocket?.close();
+  }
 }
 
-class _ChatScreenState extends State<ChatScreen> {
-  TCPServer? _tcpServer;
-  TCPClient? _tcpClient;
-  UDPServer? _udpServer;
-  UDPClient? _udpClient;
-  List<String> _messages = [];
-  List<String> _discoveredDevices = [];
-  String? _selectedDevice;
+class TCPClient {
+  Socket? _socket;
 
-  @override
-  void initState() {
-    super.initState();
-    _setupServer();
-    _discoverDevices();
-  }
-
-  Future<void> _setupServer() async {
-    _tcpServer = TCPServer();
-    await _tcpServer?.startServer(8080, _onMessageReceived);
-    _udpServer = UDPServer();
-    await _udpServer?.startServer(8081, _onMessageReceived);
-  }
-
-  Future<void> _discoverDevices() async {
-    DiscoveryService discoveryService = DiscoveryService();
-    List<String> devices = await discoveryService.discoverDevices();
-    setState(() {
-      _discoveredDevices = devices;
+  Future<void> connectToServer(
+      String ip, int port, Function(String) onMessageReceived) async {
+    _socket = await Socket.connect(ip, port);
+    _socket?.listen((List<int> data) {
+      String message = String.fromCharCodes(data);
+      onMessageReceived(message);
     });
   }
 
-  void _onMessageReceived(String message) {
-    setState(() {
-      _messages.add(message);
+  void sendMessage(String message) {
+    _socket?.write(message);
+  }
+
+  void disconnect() {
+    _socket?.destroy();
+  }
+}
+
+class UDPServer {
+  RawDatagramSocket? _udpSocket;
+
+  Future<void> startServer(int port, Function(String) onMessageReceived) async {
+    _udpSocket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, port);
+    _udpSocket?.listen((RawSocketEvent event) {
+      if (event == RawSocketEvent.read) {
+        Datagram? dg = _udpSocket?.receive();
+        if (dg != null) {
+          String message = String.fromCharCodes(dg.data);
+          onMessageReceived(message);
+        }
+      }
     });
   }
 
-  void _connectToDevice(String deviceIP) async {
-    _tcpClient = TCPClient();
-    await _tcpClient?.connectToServer(deviceIP, 8080, _onMessageReceived);
-    setState(() {
-      _selectedDevice = deviceIP;
+  void stopServer() {
+    _udpSocket?.close();
+  }
+}
+
+class UDPClient {
+  void sendMessage(InternetAddress ipAddress, int port, String message) {
+    RawDatagramSocket.bind(InternetAddress.anyIPv4, 0).then((socket) {
+      socket.send(message.codeUnits, ipAddress, port);
+      socket.close();
     });
-  }
-
-  void _sendMessage(String message) {
-    if (_tcpClient != null) {
-      _tcpClient?.sendMessage(message);
-    } else if (_udpClient != null && _selectedDevice != null) {
-      _udpClient?.sendMessage(
-        InternetAddress(_selectedDevice!), // Correct usage of InternetAddress
-        8081,
-        message,
-      );
-    }
-    setState(() {
-      _messages.add("Me: $message");
-    });
-  }
-
-  @override
-  void dispose() {
-    _tcpServer?.stopServer();
-    _udpServer?.stopServer();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Chat")),
-      body: Column(
-        children: [
-          if (_selectedDevice == null)
-            Expanded(
-              child: ListView.builder(
-                itemCount: _discoveredDevices.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(_discoveredDevices[index]),
-                    onTap: () => _connectToDevice(_discoveredDevices[index]),
-                  );
-                },
-              ),
-            )
-          else
-            Expanded(
-              child: ListView.builder(
-                itemCount: _messages.length,
-                itemBuilder: (context, index) =>
-                    ListTile(title: Text(_messages[index])),
-              ),
-            ),
-          if (_selectedDevice != null)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  Expanded(child: TextField(onSubmitted: _sendMessage)),
-                  IconButton(
-                    icon: Icon(Icons.send),
-                    onPressed: () => _sendMessage('Test message'),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
   }
 }
