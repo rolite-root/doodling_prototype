@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1098391614631",
+    "project_id": "doodlingprototype",
+    "storage_bucket": "doodlingprototype.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1098391614631:android:029253b8c7f27a3ac91782",
+        "android_client_info": {
+          "package_name": "com.example.doodling_prototype"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYW3sP0SyEU0Op4RZmp0sJRkK4ovVtZ5Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
