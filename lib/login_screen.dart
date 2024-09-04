@@ -1,42 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'auth_service.dart';
+import 'slider_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
+  LoginScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Login')),
+      appBar: AppBar(title: const Text('Login')),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
               controller: emailController,
-              decoration: InputDecoration(labelText: 'Email'),
+              decoration: const InputDecoration(labelText: 'Email'),
             ),
             TextField(
               controller: passwordController,
-              decoration: InputDecoration(labelText: 'Password'),
+              decoration: const InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
             ElevatedButton(
               onPressed: () {
-                Provider.of<AuthService>(context, listen: false).signInWithEmailAndPassword(
+                bool success = Provider.of<AuthService>(context, listen: false)
+                    .signInWithEmailAndPassword(
                   emailController.text,
                   passwordController.text,
                 );
+
+                if (success) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => SliderScreen()),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Invalid credentials')),
+                  );
+                }
               },
-              child: Text('Login'),
+              child: const Text('Login'),
             ),
             TextButton(
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => RegisterScreen()));
               },
-              child: Text('Register'),
+              child: const Text('Register'),
             ),
           ],
         ),
@@ -49,31 +64,45 @@ class RegisterScreen extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
+  RegisterScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Register')),
+      appBar: AppBar(title: const Text('Register')),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
               controller: emailController,
-              decoration: InputDecoration(labelText: 'Email'),
+              decoration: const InputDecoration(labelText: 'Email'),
             ),
             TextField(
               controller: passwordController,
-              decoration: InputDecoration(labelText: 'Password'),
+              decoration: const InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
             ElevatedButton(
               onPressed: () {
-                Provider.of<AuthService>(context, listen: false).registerWithEmailAndPassword(
+                bool success = Provider.of<AuthService>(context, listen: false)
+                    .registerWithEmailAndPassword(
                   emailController.text,
                   passwordController.text,
                 );
+
+                if (success) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Registration successful! Please login.')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Email is already registered')),
+                  );
+                }
               },
-              child: Text('Register'),
+              child: const Text('Register'),
             ),
           ],
         ),

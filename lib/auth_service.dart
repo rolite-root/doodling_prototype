@@ -1,53 +1,37 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mac_address/mac_address.dart';
 
+class AuthService extends ChangeNotifier {
+  final Map<String, String> _registeredUsers = {};
+  String? _currentUser;
 
-class AuthService with ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  User? _user;
-  bool get isAuthenticated => _user != null;
+  String? get currentUser => _currentUser;
 
-  AuthService() {
-    _auth.authStateChanges().listen((user) {
-      _user = user;
+  bool get isAuthenticated => _currentUser != null;
+
+  bool registerWithEmailAndPassword(String email, String password) {
+    if (_registeredUsers.containsKey(email)) {
+      return false; 
+    }
+    _registeredUsers[email] = password;
+    notifyListeners();
+    return true;
+  }
+
+  bool signInWithEmailAndPassword(String email, String password) {
+    if (_registeredUsers[email] == password) {
+      _currentUser = email;
       notifyListeners();
-    });
-  }
-
-  Future<void> registerWithEmailAndPassword(String email, String password) async {
-    try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      _user = userCredential.user;
-
-      // Store MAC address in Firestore
-      String macAddress = await GetMac.macAddress;
-      await FirebaseFirestore.instance.collection('users').doc(_user!.uid).set({
-        'email': email,
-        'macAddress': macAddress,
-      });
-    } catch (e) {
-      print(e);
+      return true;
     }
+    return false; 
   }
 
-  Future<void> signInWithEmailAndPassword(String email, String password) async {
-    try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      _user = userCredential.user;
-    } catch (e) {
-      print(e);
-    }
+  void logout() {
+    _currentUser = null;
+    notifyListeners();
   }
 
-  Future<void> signOut() async {
-    await _auth.signOut();
+  List<String> getOnlineUsers() {
+    return _registeredUsers.keys.toList(); 
   }
 }
