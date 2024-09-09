@@ -27,8 +27,9 @@ class LoginScreen extends StatelessWidget {
               obscureText: true,
             ),
             ElevatedButton(
-              onPressed: () {
-                bool success = Provider.of<AuthService>(context, listen: false)
+              onPressed: () async {
+                // Perform sign-in operation
+                bool success = await Provider.of<AuthService>(context, listen: false)
                     .signInWithEmailAndPassword(
                   emailController.text,
                   passwordController.text,
@@ -37,7 +38,7 @@ class LoginScreen extends StatelessWidget {
                 if (success) {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (_) => SliderScreen()),
+                    MaterialPageRoute(builder: (_) => const SliderScreen()),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -84,8 +85,9 @@ class RegisterScreen extends StatelessWidget {
               obscureText: true,
             ),
             ElevatedButton(
-              onPressed: () {
-                bool success = Provider.of<AuthService>(context, listen: false)
+              onPressed: () async {
+                // Perform registration operation
+                bool success = await Provider.of<AuthService>(context, listen: false)
                     .registerWithEmailAndPassword(
                   emailController.text,
                   passwordController.text,

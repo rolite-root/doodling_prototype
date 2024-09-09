@@ -19,7 +19,7 @@ class SliderScreen extends StatelessWidget {
               decoration: const BoxDecoration(color: Colors.blue),
               child: Text(
                 'Hello, ${Provider.of<AuthService>(context).currentUser}',
-                style: TextStyle(color: Colors.white, fontSize: 24),
+                style: const TextStyle(color: Colors.white, fontSize: 24),
               ),
             ),
             ListTile(
@@ -50,7 +50,7 @@ class SliderScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => OnlineUsersScreen()),
+                  MaterialPageRoute(builder: (_) => const OnlineUsersScreen()),
                 );
               },
             ),

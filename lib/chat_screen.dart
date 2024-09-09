@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'chat_service.dart';
 import 'discovery_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'device_responder.dart';  
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_sound/flutter_sound.dart';
-import 'package:firebase_auth/firebase_auth.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
+
+
 
 class ChatScreen extends StatefulWidget {
   final GlobalKey<ScaffoldState> _scaffoldKey;
 
-  ChatScreen({super.key})
-      : _scaffoldKey = GlobalKey<ScaffoldState>();
+  ChatScreen({super.key}) : _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
@@ -24,8 +25,7 @@ class _ChatScreenState extends State<ChatScreen> {
   UDPServer? _udpServer;
   UDPClient? _udpClient;
   final List<String> _messages = [];
-  List<Map<String, String>> _discoveredDevices =
-      []; // Stores device info with IP and Username
+  List<Map<String, String>> _discoveredDevices =[]; // Stores device info with IP and Username
   String? _selectedDevice;
   String? _selectedUsername;
   final TextEditingController _messageController = TextEditingController();
@@ -36,6 +36,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _setupServer();
+    _startDeviceResponder();
     _discoverDevices();
     _recorder = FlutterSoundRecorder();
   }
@@ -45,6 +46,12 @@ class _ChatScreenState extends State<ChatScreen> {
     await _tcpServer?.startServer(8080, _onMessageReceived);
     _udpServer = UDPServer();
     await _udpServer?.startServer(8081, _onMessageReceived);
+  }
+
+
+  Future<void> _startDeviceResponder() async {
+    DeviceResponder responder = DeviceResponder();
+    await responder.startResponder();  // Start the device responder to advertise the device
   }
 
   Future<void> _discoverDevices() async {
@@ -169,8 +176,25 @@ class _ChatScreenState extends State<ChatScreen> {
       drawer: Drawer(
         child: ListView(
           children: [
-            const DrawerHeader(child: Text("Options")),
+            DrawerHeader(
+              decoration: const BoxDecoration(color: Colors.blue),
+              child: Text(
+                'Hello, ${FirebaseAuth.instance.currentUser?.email}',
+                style: TextStyle(color: Colors.white, fontSize: 24),
+              ),
+            ),
             ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SettingsScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
               title: const Text("Logout"),
               onTap: () async {
                 await _logout();
@@ -178,6 +202,7 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.switch_account),
               title: const Text("Switch Account"),
               onTap: () async {
                 await _switchAccount();
@@ -185,6 +210,7 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.people),
               title: const Text("Available Users"),
               onTap: () {
                 _showAvailableUsers();
@@ -209,9 +235,22 @@ class _ChatScreenState extends State<ChatScreen> {
         itemCount: _discoveredDevices.length,
         itemBuilder: (context, index) {
           final device = _discoveredDevices[index];
+          bool isConnected = device['ip'] == _selectedDevice;
+
           return ListTile(
-            title: Text(device['username']!),
-            onTap: () => _connectToDevice(device['ip']!, device['username']!),
+            title: Text(
+              device['username'] ?? 'Unknown',
+              style: TextStyle(color: isConnected ? Colors.black : Colors.grey),
+            ),
+            leading: Icon(
+              isConnected ? Icons.lock_open : Icons.lock,
+              color: isConnected ? Colors.black : Colors.grey,
+            ),
+            onTap: () {
+              if (!isConnected) {
+                _connectToDevice(device['ip']!, device['username']!);
+              }
+            },
           );
         },
       ),
@@ -259,6 +298,84 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
+// Settings Screen for changing username
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  _SettingsScreenState createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final TextEditingController _usernameController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _usernameController,
+              decoration:
+                  const InputDecoration(labelText: 'Enter New Username'),
+            ),
+            ElevatedButton(
+              onPressed: _isLoading
+                  ? null
+                  : () async {
+                      setState(() {
+                        _isLoading = true;
+                      });
+                      String newUsername = _usernameController.text.trim();
+                      bool usernameExists =
+                          await _checkUsernameExists(newUsername);
+
+                      if (usernameExists) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Username already exists.')),
+                        );
+                      } else {
+                        await _updateUsername(newUsername);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Username updated successfully.')),
+                        );
+                      }
+
+                      setState(() {
+                        _isLoading = false;
+                      });
+                    },
+              child: _isLoading
+                  ? const CircularProgressIndicator()
+                  : const Text('Update Username'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _checkUsernameExists(String username) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('username', isEqualTo: username)
+        .get();
+    return snapshot.docs.isNotEmpty;
+  }
+
+  Future<void> _updateUsername(String newUsername) async {
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+    await FirebaseFirestore.instance.collection('users').doc(userId).update({
+      'username': newUsername,
+    });
+  }
+}
+
 class AvailableUsersScreen extends StatefulWidget {
   const AvailableUsersScreen({super.key});
 
@@ -303,7 +420,6 @@ class _AvailableUsersScreenState extends State<AvailableUsersScreen> {
           return ListTile(
             title: Text(user['username']),
             onTap: () {
-              // Start a chat with the selected user or perform other actions
               Navigator.of(context).pop(); // Go back to the previous screen
               // Add your chat initiation code here
             },
