@@ -40,7 +40,7 @@ class AuthWrapper extends StatelessWidget {
     if (authService.isAuthenticated) {
       return ChatScreen();
     } else {
-      return LoginScreen();
+      return const LoginScreen();
     }
   }
 }

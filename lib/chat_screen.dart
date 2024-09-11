@@ -180,7 +180,7 @@ class _ChatScreenState extends State<ChatScreen> {
               decoration: const BoxDecoration(color: Colors.blue),
               child: Text(
                 'Hello, ${FirebaseAuth.instance.currentUser?.email}',
-                style: TextStyle(color: Colors.white, fontSize: 24),
+                style: const TextStyle(color: Colors.white, fontSize: 24),
               ),
             ),
             ListTile(
@@ -189,7 +189,7 @@ class _ChatScreenState extends State<ChatScreen> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => SettingsScreen()),
+                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
                 );
               },
             ),

@@ -12,7 +12,12 @@
           "package_name": "com.example.doodling_prototype"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1098391614631-pkchpp11i7hvierg6gc64gb6qj5usq1n.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDYW3sP0SyEU0Op4RZmp0sJRkK4ovVtZ5Y"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1098391614631-pkchpp11i7hvierg6gc64gb6qj5usq1n.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1098391614631-1ijqdk8iqvpnqg579skk4glgaa2rn8i1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.doodlingPrototype"
+              }
+            }
+          ]
         }
       }
     }

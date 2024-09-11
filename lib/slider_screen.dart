@@ -29,7 +29,7 @@ class SliderScreen extends StatelessWidget {
                 Provider.of<AuthService>(context, listen: false).logout();
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (_) => LoginScreen()),
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
                 );
               },
             ),
@@ -40,7 +40,7 @@ class SliderScreen extends StatelessWidget {
                 Provider.of<AuthService>(context, listen: false).logout();
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (_) => LoginScreen()),
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
                 );
               },
             ),
