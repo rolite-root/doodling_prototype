@@ -50,7 +50,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
 
   Future<void> _startDeviceResponder() async {
-    DeviceResponder responder = DeviceResponder();
+    DeviceResponder responder = const DeviceResponder();
     await responder.startResponder();  // Start the device responder to advertise the device
   }
 
