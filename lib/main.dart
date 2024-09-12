@@ -38,7 +38,7 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
     if (authService.isAuthenticated) {
-      return ChatScreen();
+      return const ChatScreen();
     } else {
       return const LoginScreen();
     }
