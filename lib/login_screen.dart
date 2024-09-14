@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'auth_service.dart';
+import 'register_screen.dart'; // Ensure this import is added.
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,9 +13,18 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   bool isLoading = false;
+  bool passwordVisible =
+      false; // This will control the visibility of the password
 
-  // Email and password validation
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
   String? validateEmail(String email) {
     final emailRegex = RegExp(
         r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
@@ -35,7 +45,6 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  // Helper function to handle authentication operations
   Future<void> handleAuthOperation(Function authMethod) async {
     setState(() {
       isLoading = true;
@@ -43,13 +52,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       await authMethod();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Operation successful!')),
-      );
+      showCustomSnackBar(context, 'Login successful!');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Operation failed: ${e.toString()}')),
-      );
+      showCustomSnackBar(context, 'Login failed: ${e.toString()}',
+          isError: true);
     } finally {
       setState(() {
         isLoading = false;
@@ -61,179 +67,115 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Login')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            ElevatedButton(
-              onPressed: isLoading
-                  ? null
-                  : () {
-                      String? emailError = validateEmail(emailController.text);
-                      String? passwordError =
-                          validatePassword(passwordController.text);
-                      if (emailError != null || passwordError != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text(
-                                  'Invalid input: $emailError $passwordError')),
-                        );
-                        return;
-                      }
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                // Email field
+                TextFormField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) => validateEmail(value!),
+                ),
+                const SizedBox(height: 16),
 
-                      handleAuthOperation(() {
-                        return Provider.of<AuthService>(context, listen: false)
-                            .signInWithEmailAndPassword(
-                          emailController.text,
-                          passwordController.text,
-                        );
-                      });
-                    },
-              child: isLoading
-                  ? const CircularProgressIndicator()
-                  : const Text('Login'),
+                // Password field with visibility toggle
+                TextFormField(
+                  controller: passwordController,
+                  obscureText:
+                      !passwordVisible, // Control the visibility of the password
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        passwordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          passwordVisible = !passwordVisible;
+                        });
+                      },
+                    ),
+                    border: const OutlineInputBorder(),
+                  ),
+                  validator: (value) => validatePassword(value!),
+                ),
+                const SizedBox(height: 20),
+
+                // Loading spinner or login button
+                isLoading
+                    ? const CircularProgressIndicator()
+                    : ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            handleAuthOperation(() {
+                              return Provider.of<AuthService>(context,
+                                      listen: false)
+                                  .signInWithEmailAndPassword(
+                                emailController.text,
+                                passwordController.text,
+                              );
+                            });
+                          }
+                        },
+                        child: const Text('Login'),
+                      ),
+
+                // Register button
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const RegisterScreen()));
+                  },
+                  child: const Text('Register'),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const RegisterScreen()));
-              },
-              child: const Text('Register'),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
-
-  @override
-  _RegisterScreenState createState() => _RegisterScreenState();
-}
-
-class _RegisterScreenState extends State<RegisterScreen> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController =
-      TextEditingController();
-  bool isLoading = false;
-
-  String? validateEmail(String email) {
-    final emailRegex = RegExp(
-        r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
-    if (email.isEmpty) {
-      return 'Email cannot be empty';
-    } else if (!emailRegex.hasMatch(email)) {
-      return 'Enter a valid email';
-    }
-    return null;
-  }
-
-  String? validatePassword(String password) {
-    if (password.isEmpty) {
-      return 'Password cannot be empty';
-    } else if (password.length < 6) {
-      return 'Password must be at least 6 characters long';
-    }
-    return null;
-  }
-
-  Future<void> handleAuthOperation(Function authMethod) async {
-    setState(() {
-      isLoading = true;
-    });
-
-    try {
-      await authMethod();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Operation successful!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Operation failed: ${e.toString()}')),
-      );
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Register')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            TextField(
-              controller: confirmPasswordController,
-              decoration: const InputDecoration(labelText: 'Confirm Password'),
-              obscureText: true,
-            ),
-            ElevatedButton(
-              onPressed: isLoading
-                  ? null
-                  : () {
-                      String? emailError = validateEmail(emailController.text);
-                      String? passwordError =
-                          validatePassword(passwordController.text);
-
-                      if (emailError != null || passwordError != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text(
-                                  'Invalid input: $emailError $passwordError')),
-                        );
-                        return;
-                      }
-
-                      if (passwordController.text !=
-                          confirmPasswordController.text) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Passwords do not match')),
-                        );
-                        return;
-                      }
-
-                      handleAuthOperation(() {
-                        return Provider.of<AuthService>(context, listen: false)
-                            .registerWithEmailAndPassword(
-                          emailController.text,
-                          passwordController.text,
-                        );
-                      });
-                    },
-              child: isLoading
-                  ? const CircularProgressIndicator()
-                  : const Text('Register'),
-            ),
-          ],
+// Custom SnackBar for better UI feedback
+void showCustomSnackBar(BuildContext context, String message,
+    {bool isError = false}) {
+  final snackBar = SnackBar(
+    content: Row(
+      children: [
+        Icon(
+          isError ? Icons.error_outline : Icons.check_circle_outline,
+          color: Colors.white,
         ),
-      ),
-    );
-  }
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            message,
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      ],
+    ),
+    backgroundColor: isError ? Colors.redAccent : Colors.green,
+    behavior: SnackBarBehavior.floating,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(10),
+    ),
+    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+  );
+
+  ScaffoldMessenger.of(context).showSnackBar(snackBar);
 }

@@ -1,33 +1,40 @@
 import 'package:flutter/material.dart';
+import 'chat_with_user_screen.dart';
 
 class AvailableUsersScreen extends StatelessWidget {
-  const AvailableUsersScreen({super.key});
+  final List<Map<String, String>> availableUsers;
+
+  const AvailableUsersScreen({super.key, required this.availableUsers});
 
   @override
   Widget build(BuildContext context) {
-    // Example users list
-    final List<Map<String, String>> availableUsers = [
-      {'username': 'User1', 'ip': '192.168.1.101'},
-      {'username': 'User2', 'ip': '192.168.1.102'},
-    ];
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("Available Users"),
       ),
-      body: ListView.builder(
-        itemCount: availableUsers.length,
-        itemBuilder: (context, index) {
-          final user = availableUsers[index];
-          return ListTile(
-            title: Text(user['username'] ?? 'Unknown'),
-            subtitle: Text(user['ip'] ?? 'No IP Address'),
-            onTap: () {
-              // Handle user selection (e.g., start chat)
-            },
-          );
-        },
-      ),
+      body: availableUsers.isEmpty
+          ? const Center(child: Text("No users available"))
+          : ListView.builder(
+              itemCount: availableUsers.length,
+              itemBuilder: (context, index) {
+                final user = availableUsers[index];
+                return ListTile(
+                  title: Text(user['username'] ?? 'Unknown'),
+                  subtitle: Text(user['ip'] ?? 'No IP Address'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatWithUserScreen(
+                          username: user['username']!,
+                          ipAddress: user['ip']!,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
     );
   }
 }

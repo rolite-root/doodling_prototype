@@ -149,9 +149,19 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _showAvailableUsers() {
     if (!_isLoading) {
+      // Example list of users - you should replace this with your actual data
+      List<Map<String, String>> usersList = [
+        {'username': 'Alice', 'ip': '192.168.1.1'},
+        {'username': 'Bob', 'ip': '192.168.1.2'},
+      ];
+
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const AvailableUsersScreen()),
+        MaterialPageRoute(
+          builder: (context) => AvailableUsersScreen(
+            availableUsers: usersList, // Pass the list of users here
+          ),
+        ),
       );
     }
   }
